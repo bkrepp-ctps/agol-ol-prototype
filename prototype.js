@@ -160,7 +160,14 @@ function initialize() {
          // Beginning of stuff for spatial query driven by sketch
         var draw;
         function addInteraction() {
-            draw = new ol.interaction.Draw({ source: source, type: 'Polygon' });
+            draw = new ol.interaction.Draw({ source: source, type: 'Polygon'  });
+            draw.on('drawend', function (e) {
+                console.log('Edit sketch complete.');
+                var _DEBUG_HOOK = 0;
+                var currentFeature= e.feature;
+                var g = currentFeature.getGeometry();
+                _DEBUG_HOOK = 1;
+            });
             ol_map.addInteraction(draw);
         }
         addInteraction();
