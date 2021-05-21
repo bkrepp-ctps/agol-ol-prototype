@@ -2,13 +2,14 @@
 //
 // Author: Ben Krepp (bkrepp@ctps.org)
 
+// SRS of MassGIS basemap: EPSG:3857, a.k.a. SR-ORG:6864
+proj4.defs("SR-ORG:6864", "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+var epsg3857_proj = proj4('EPSG:3857');
 
-// ESRI API key - probably not needed if not using ESRI basemap
-const apiKey = "YOUR_API_KEY";
+// SRS of demographic data (Mass State Plane, NAD 83, meters)
+proj4.defs("EPSG:26986", "+proj=lcc +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs");
+var epsg26986_proj = proj4('EPSG:26986');
 
-// URL for AGOL-hosted WFS service containing TAZ-level demographic data from last LRTP
-// N.B. - This service was deleted on 5/18/21 at 2:30 PM EDT.
-// var sample_taz_wfs =  'https://dservices1.arcgis.com/jIRgb54Jq9V3BUeD/arcgis/services/sample_taz_demographics/WFSServer?service=wfs';
 
 // URL for AGOL-hosted ESRI "feature service" containing TAZ-level demographic data from last LRTP
 var sample_taz_esri = 'https://services1.arcgis.com/jIRgb54Jq9V3BUeD/ArcGIS/rest/services/sample_taz_demographics/FeatureServer/0';
@@ -63,8 +64,24 @@ function executeTabularQuery(whereClause) {
             }
             $('#output_div').html(s)
       });
-} // executeQuery()
+} // executeTabularQuery()
 
+
+function executeSpatialQuery(geometry) {
+    arcgisRest
+        .queryFeatures({
+              url: sample_taz_esri,
+              geometry: geometry,
+              geometryType: "esriGeometryPolygon",
+              spatialRel: "intersects",
+              f: "json",
+              returnGeometry: true
+        })
+        .then((response) => {
+              const features = new ol.format.JSON().readFeatures(response);
+              var _DEBUG_HOOK = 0;
+        });
+} //executeSpatialQuery()
 
 // OpenLayers 'map' object:
 var ol_map = null;
@@ -166,7 +183,14 @@ function initialize() {
                 var _DEBUG_HOOK = 0;
                 var currentFeature= e.feature;
                 var g = currentFeature.getGeometry();
+                // Note: ESRI spatial query is a 'BBOX" query requiring an esriGeometryEnvelope parm: [minx, miny, maxx, maxy]
+                var bbox3857 = g.getExtent();
+                // TBD: (1) Check that the elements of this array are in the correct order
+                //        (2) Reproject to EPSG:26986
+                
                 _DEBUG_HOOK = 1;
+                // Execute spatial query
+                 executeSpatialQuery(g);              
             });
             ol_map.addInteraction(draw);
         }
