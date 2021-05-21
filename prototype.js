@@ -104,7 +104,7 @@ oHighlightLayer.setStyle(myVectorStyle);
 
 
 // Execute purely tabular SQL query code, taken from ESRI demo code
-function executeQuery(whereClause) {
+function executeTabularQuery(whereClause) {
     arcgisRest
          .queryFeatures({
              url: sample_taz_esri,
@@ -118,11 +118,13 @@ function executeQuery(whereClause) {
             var features = returned_geojson.readFeatures(response);
             var _DEBUG_HOOK_ = 0;
             var i, props, s;
+            $('#output_div').html('');
+            s = '';
             for (i = 0; i < features.length; i++) {
                 props = features[i].getProperties();
-                s = 'TAZ = ' + props.taz + ' 2010 population = ' + props.total_pop_2010 + ' 2016 population = ' + props.total_pop_2016 + '.' ;
-                console.log(s);
+                s += 'TAZ = ' + props.taz + ' 2010 population = ' + props.total_pop_2010 + ' 2016 population = ' + props.total_pop_2016 + '.' + '</br>' ;
             }
+            $('#output_div').html(s)
       });
 } // executeQuery()
 
@@ -215,7 +217,7 @@ function initialize() {
 
          console.log('Initialization complete.');
          // Execute a simple tabular SQL query of the underlying data.
-         executeQuery("town='ARLINGTON'");
+         executeTabularQuery("town='ARLINGTON'");
     }});
 
 } // initialize()
