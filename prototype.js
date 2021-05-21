@@ -2,6 +2,7 @@
 //
 // Author: Ben Krepp (bkrepp@ctps.org)
 
+
 // ESRI API key - probably not needed if not using ESRI basemap
 const apiKey = "YOUR_API_KEY";
 
@@ -30,76 +31,12 @@ var mgis_basemap_layers = { 'topo_features'     : null,     // bottom layer
                             'parcels'           : null      // unused; not populated
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Beginning of legacy code for OL vector layer - carried over in case we might want to use it
+// Stuff for sketching vector polygon for spatial query
+var source = new ol.source.Vector({wrapX: false});
 
-// Max map resolution at which to label vector features.
-var maxResolutionForLabelingVectorFeatures = 1200;   
-
-// Our function to return text to label vector features
-//
-// Unabashedly borrowed from https://openlayers.org/en/latest/examples/vector-labels.html,
-// and subsequently morphed for our purposes.
-//
-var getText = function(feature, resolution) {
-  var maxResolution = maxResolutionForLabelingVectorFeatures;
-  var text = "Lot " + String(feature.get('lot_id'));
-  if (resolution > maxResolution) {
-    text = '';
-  }
-  return text;
-};
-// Our createTextStyle function for labeling the vector layer
-//
-// Unabashedly borrowed from https://openlayers.org/en/latest/examples/vector-labels.html,
-// and subsequently morphed for our purposes.
-//
-var createTextStyle = function(feature, resolution) {
-  var align = 'center';
-  var baseline = 'middle';
-  var size = '14px';
-  var height = 1;
-  var offsetX = 0;
-  var offsetY = 0;
-  var weight = 'normal';
-  var placement = 'point';
-  var maxAngle = 45;
-  var overflow = 'true'; 
-  var rotation = 0;
-  var font = weight + ' ' + size + '/' + height + ' ' + 'Arial';
-  var fillColor = 'black';      // Color of label TEXT itself
-  var outlineColor = 'white';   // Color of label OUTLINE
-  var outlineWidth = 0;
-
-  return new ol.style.Text({
-    textAlign: align,
-    textBaseline: baseline,
-    font: font,
-    text: getText(feature, resolution),
-    fill: new ol.style.Fill({color: fillColor}),
-    stroke: new ol.style.Stroke({color: outlineColor, width: outlineWidth}),
-    offsetX: offsetX,
-    offsetY: offsetY,
-    placement: placement,
-    maxAngle: maxAngle,
-    overflow: overflow,
-    rotation: rotation
-  });
-};
-
-// Define OpenLayers vector layer - will overlay the base layer
-var oHighlightLayer = new ol.layer.Vector({source: new ol.source.Vector({ wrapX: false }) });
-// Define style for vector layer, and set the vector layer's style to it
-function myVectorStyle(feature, resolution) {
-	return new ol.style.Style({ fill	: new ol.style.Fill({ color: 'rgba(193,66,66,0.4)' }), 
-                                stroke : new ol.style.Stroke({ color: 'rgba(0,0,255,1.0)', width: 3.0}),
-								text:   createTextStyle(feature, resolution)
-				});
-}
-oHighlightLayer.setStyle(myVectorStyle);
-
-// End of legacy code for OL vector layer - carried over in case we might want to use it
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var vectorDrawingLayer = new ol.layer.Vector({
+  source: source,
+});
 
 
 
@@ -209,15 +146,25 @@ function initialize() {
         ol_map = new ol.Map({ layers: [   mgis_basemap_layers['topo_features'],
                                                         mgis_basemap_layers['structures'],
                                                         mgis_basemap_layers['basemap_features'],
-                                                        oHighlightLayer
+                                                        vectorDrawingLayer
                                       ],
                                target: 'map',
                                view:   new ol.View({ center: ol.proj.fromLonLat([-71.0589, 42.3601]), zoom: 11 })
                             });     
 
          console.log('Initialization complete.');
+         
          // Execute a simple tabular SQL query of the underlying data.
          executeTabularQuery("town='ARLINGTON'");
+         
+         // Beginning of stuff for spatial query driven by sketch
+        var draw;
+        function addInteraction() {
+            draw = new ol.interaction.Draw({ source: source, type: 'Polygon' });
+            ol_map.addInteraction(draw);
+        }
+        addInteraction();
+               
     }});
 
 } // initialize()
